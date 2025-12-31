@@ -1,21 +1,30 @@
-export default async function handler(req, res) {
-  const { message } = req.body;
+import OpenAI from "openai";
 
-  const response = await fetch("https://api.openai.com/v1/chat/completions", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`
-    },
-    body: JSON.stringify({
+const client = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+});
+
+export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(200).json({ ok: true });
+  }
+
+  try {
+    const { message } = req.body;
+
+    const completion = await client.chat.completions.create({
       model: "gpt-4.1-mini",
       messages: [
-        { role: "system", content: "You are a professional fitness coach." },
-        { role: "user", content: message }
-      ]
-    })
-  });
+        { role: "system", content: "You are a Turkish personal fitness coach." },
+        { role: "user", content: message },
+      ],
+    });
 
-  const data = await response.json();
-  res.status(200).json({ reply: data.choices[0].message.content });
+    res.status(200).json({
+      reply: completion.choices[0].message.content,
+    });
+  } catch (e) {
+    console.error("AI ERROR:", e);
+    res.status(500).json({ error: "AI failed", detail: e.message });
+  }
 }
